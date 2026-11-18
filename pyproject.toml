@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spectrapy"
+version = "0.1.0"
+description = "Physically based spectral colour calculations and beautiful spectral plots with NumPy and matplotlib."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "LGPL-3.0-or-later"
+license-files = ["COPYING", "COPYING.LESSER"]
+authors = [{ name = "Franciszek Drągowski" }]
+keywords = ["colour", "color", "spectrum", "colorimetry", "CIE", "physics", "optics", "thin film", "matplotlib"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Education",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = ["numpy>=1.24", "matplotlib>=3.7"]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "colour-science>=0.4.4", "scipy"]
+dev = ["spectrapy[test]", "ruff"]
+
+[project.scripts]
+spectrapy-gallery = "spectrapy.gallery:main"
+
+[project.urls]
+Repository = "https://github.com/fdragowski480677/spectrapy"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spectrapy"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/spectrapy", "tests", "tools", "README.md", "COPYING", "COPYING.LESSER", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning:colour.*", "ignore:.*SciPy.*:UserWarning"]
+
+[tool.ruff]
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY"]
+ignore = ["E741", "B905"]
