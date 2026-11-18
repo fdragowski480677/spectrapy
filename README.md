@@ -1,5 +1,7 @@
 # spectrapy
 
+[![CI](https://github.com/fdragowski480677/spectrapy/actions/workflows/ci.yml/badge.svg)](https://github.com/fdragowski480677/spectrapy/actions/workflows/ci.yml)
+
 **Physically based spectral colour calculations and spectral plots — NumPy + matplotlib.**
 
 ![Spectroscope atlas: continuous spectrum, the Sun with Fraunhofer lines, and the emission lines of H, He, Ne, Na and Hg](docs/images/hero.png)
