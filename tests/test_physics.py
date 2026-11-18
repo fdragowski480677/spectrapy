@@ -153,3 +153,29 @@ def test_rainbow_spectra_shape_and_dark_band():
     band = (th > 43.5) & (th < 49.5)
     assert Y[band].max() < 0.05 * Y.max()          # Alexander's dark band
     assert Y[th < 40].min() > 0.05 * Y.max()       # bright sky inside the primary bow
+
+
+def test_prism_ray_trace_matches_analytic_deviation():
+    wl = np.array([400.0, 486.1, 550.0, 656.3, 700.0])
+    _, paths = optics.prism_rays(wl, optics.SF11, ref_wavelength=550.0)
+    d_in, d_out = paths[:, 1] - paths[:, 0], paths[:, 3] - paths[:, 2]
+    dev = -np.degrees(np.arctan2(d_out[:, 1], d_out[:, 0]) - np.arctan2(d_in[:, 1], d_in[:, 0]))
+    n = optics.SF11(wl).real
+    i_min = np.degrees(np.arcsin(optics.SF11(550.0).real * np.sin(np.radians(30.0))))
+    np.testing.assert_allclose(dev, optics.prism_deviation(n, 60.0, i_min), atol=1e-9)
+    inside = paths[2, 2] - paths[2, 1]
+    assert abs(inside[1]) < 1e-12  # minimum deviation: the ray runs parallel to the base
+    assert optics.SF11(587.56).real == pytest.approx(1.78472, abs=1e-4)
+
+
+def test_grating_equation_and_energy_conservation():
+    assert optics.grating_angle(550.0, 600.0, 1) == pytest.approx(np.degrees(np.arcsin(0.33)))
+    assert np.isnan(optics.grating_angle(550.0, 600.0, 4))
+    from spectrapy._util import trapezoid
+
+    xs = np.linspace(0.0, 1.0, 200_001)
+    X = optics.grating_screen_xyz(xs, 600.0, orders=(1,), efficiency=lambda m: 1.0)
+    src = sp.illuminant("D65").trim(360, 830)
+    assert trapezoid(X[:, 1], xs) == pytest.approx(sp.xyz(src)[1] / sp.K_M, rel=1e-5)
+    lines = optics.grating_screen_xyz(np.linspace(-2, 2, 4001), 600.0, source=sp.line_spectrum("Hg"))
+    assert lines.shape == (4001, 3) and lines[:, 1].max() > 0

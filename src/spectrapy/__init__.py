@@ -24,6 +24,7 @@ from . import (
     atmosphere,
     colorimetry,
     colorspaces,
+    icc,
     io,
     lines,
     optics,
@@ -48,7 +49,18 @@ from .colorimetry import (
     xyz_to_uv1976,
     xyz_to_xy,
 )
-from .colorspaces import ADOBE_RGB, DISPLAY_P3, LINEAR_SRGB, REC2020, SRGB, RGBColorSpace, get_colorspace
+from .colorspaces import (
+    ADOBE_RGB,
+    DISPLAY_P3,
+    LINEAR_SRGB,
+    REC2020,
+    SRGB,
+    RGBColorSpace,
+    get_colorspace,
+    get_output_space,
+    output_space,
+    set_output_space,
+)
 from .constants import K_M
 from .illuminants import (
     WHITE_POINTS,
@@ -65,9 +77,9 @@ from .spectrum import LineSpectrum, Spectrum, wavelengths
 from .temperature import cct, planckian_xy, xy_from_cct
 from .thinfilm import Stack
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
-_LAZY = {"plot", "style", "cmap", "gallery"}
+_LAZY = {"plot", "style", "cmap", "gallery", "interactive"}
 
 
 def __getattr__(name):  # PEP 562: import the matplotlib-based modules on first access
@@ -82,7 +94,8 @@ __all__ = [
     "ADOBE_RGB", "CIE1931_2", "CIE1964_10", "DISPLAY_P3", "K_M", "LINEAR_SRGB", "REC2020", "SRGB",
     "WHITE_POINTS", "LineSpectrum", "Observer", "RGBColorSpace", "Spectrum", "Stack", "adaptation",
     "atmosphere", "available_illuminants", "blackbody", "cct", "color", "colorimetry", "colorspaces",
-    "cri", "daylight", "dominant_wavelength", "get_colorspace", "get_observer", "hex_color",
+    "cri", "daylight", "dominant_wavelength", "get_colorspace", "get_observer", "get_output_space", "hex_color",
+    "icc", "output_space", "set_output_space",
     "illuminant", "illuminant_white", "io", "line_spectrum", "lines", "optics", "planck", "planckian_xy",
     "quality", "render", "solar_spectrum", "temperature", "thinfilm", "uniform", "uv1960_to_xy", "uv1976_to_xy",
     "wavelengths", "xy_from_cct", "xy_to_uv1960", "xy_to_uv1976", "xy_to_xyz", "xyz", "xyz_to_uv1960",

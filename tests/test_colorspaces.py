@@ -83,3 +83,15 @@ def test_adapted_object_colours():
     adapted = sp.color(grey, illuminant="A", adapt=True)
     assert under_a[0] > under_a[2] + 0.2          # looks orange in a daylight-balanced picture
     assert np.ptp(adapted) < 0.01                  # neutral to an observer adapted to A
+
+
+def test_whiten_handles_neutral_overexposure():
+    import warnings
+
+    from spectrapy.colorspaces import map_highlights
+
+    rgb = np.array([[3.0, 3.0, 3.0], [1.0 + 1e-15, 1.0, 1.0], [2.0, 1.0, 0.5]])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        out = map_highlights(rgb, sp.SRGB.luminance_weights, "whiten")
+    assert np.all(np.isfinite(out)) and np.all(out <= 1.0) and np.allclose(out[0], 1.0)

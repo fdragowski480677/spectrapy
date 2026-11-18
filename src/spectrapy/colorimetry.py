@@ -156,7 +156,7 @@ def dominant_wavelength(xy, white="D65", observer="1931"):
 
 
 # ------------------------------------------------------------------ display shortcuts
-def color(obj, space="srgb", observer="1931", illuminant=None, brightness="auto",
+def color(obj, space=None, observer="1931", illuminant=None, brightness="auto",
           gamut: str = "oklch", highlights: str = "scale", exposure: float = 1.0,
           adapt: bool = False) -> np.ndarray:
     """Displayable, encoded RGB in ``[0, 1]`` (shape ``batch + (3,)``).

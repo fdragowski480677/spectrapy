@@ -22,7 +22,7 @@ def visibility(wl, observer="1931", gamma: float = 0.35) -> np.ndarray:
     return np.clip(c / obs.cmf.max(), 0.0, 1.0) ** gamma
 
 
-def fill_colors(wl, brightness="full", fade_invisible=True, ax=None, space="srgb") -> np.ndarray:
+def fill_colors(wl, brightness="full", fade_invisible=True, ax=None, space=None) -> np.ndarray:
     """Spectral colours for filling under spectra; invisible wavelengths fade to a quiet grey."""
     rgb = spectral_colors(wl, brightness=brightness, space=space)
     if fade_invisible and brightness == "full":
@@ -47,7 +47,7 @@ def _swatch_label(s, rgb_hex):
 def spectrum(s, ax=None, *, fill: bool = True, brightness: str = "full", fade_invisible: bool = True,
              alpha: float = 1.0, color=None, lw: float | None = None, label=None, swatch: bool = True,
              normalize: str | None = None, xlim=None, xlabel: str = "Wavelength (nm)", ylabel: str | None = None,
-             illuminant=None, legend: bool = True, space="srgb"):
+             illuminant=None, legend: bool = True, space=None):
     """Plot a spectrum with the area under the curve filled by the colours of its wavelengths.
 
     * single :class:`Spectrum`: coloured fill, outline, and (``swatch=True``) a patch on the

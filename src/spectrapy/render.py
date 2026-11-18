@@ -39,7 +39,7 @@ def _monochromatic_linear(space_name: str, observer_name: str, blur_nm: float, g
     return g, rgb, float(rgb.max())
 
 
-def spectral_colors(wl, brightness: str = "full", blur_nm: float | None = None, space="srgb",
+def spectral_colors(wl, brightness: str = "full", blur_nm: float | None = None, space=None,
                     observer="1931", softness: float = 6.0, gamut: str = "oklch") -> np.ndarray:
     """Encoded RGB (shape ``wl.shape + (3,)``) of monochromatic light at wavelengths ``wl`` [nm].
 
@@ -71,6 +71,20 @@ def spectral_colors(wl, brightness: str = "full", blur_nm: float | None = None, 
     else:
         raise ValueError("brightness must be 'full' or 'luminance'")
     return np.clip(cs.encode(np.clip(rgb, 0.0, 1.0)), 0.0, 1.0)
+
+
+def compress_luminance(xyz_, tone: float = 0.5) -> np.ndarray:
+    """Compress the brightness range of an array of colours: ``Y -> Ymax (Y / Ymax)^tone`` with the
+    chromaticity of every colour unchanged. A display aid (like a camera's tone curve) that keeps dim
+    parts of a spectrum visible next to bright ones; ``tone=1`` returns the input unchanged."""
+    X = np.asarray(xyz_, dtype=float)
+    if tone == 1.0:
+        return X
+    Y = X[..., 1]
+    ymax = np.max(Y) if np.max(Y) > 0 else 1.0
+    with np.errstate(divide="ignore", invalid="ignore"):
+        f = np.where(Y > 0, (np.clip(Y, 0, None) / ymax) ** (tone - 1.0), 0.0)
+    return X * f[..., None]
 
 
 def bin_edges(lo: float, hi: float, n: int) -> np.ndarray:
@@ -106,7 +120,7 @@ def binned_xyz(obj, edges, observer="1931", fwhm: float = 0.5, profile: str = "g
     return np.einsum("...bs,bsk,s,bz->...bk", vals, cm, w, widths)
 
 
-def strip_colors(obj, lo: float = 380.0, hi: float = 750.0, n: int = 1200, space="srgb",
+def strip_colors(obj, lo: float = 380.0, hi: float = 750.0, n: int = 1200, space=None,
                  exposure: float = 1.0, highlights: str = "whiten", gamut: str = "oklch",
                  fwhm: float = 0.5, profile: str = "gaussian", flatten=None, tone: float = 1.0) -> np.ndarray:
     """Encoded RGB of ``n`` pixel columns spanning ``lo``-``hi`` nm for an emission spectrum or line
@@ -120,12 +134,8 @@ def strip_colors(obj, lo: float = 380.0, hi: float = 750.0, n: int = 1200, space
     """
     edges = bin_edges(lo, hi, n)
     X = binned_xyz(obj, edges, fwhm=fwhm, profile=profile)
-    if tone != 1.0 and flatten is None:
-        Y = X[..., 1]
-        ymax = np.max(Y) if np.max(Y) > 0 else 1.0
-        with np.errstate(divide="ignore", invalid="ignore"):
-            f = np.where(Y > 0, (np.clip(Y, 0, None) / ymax) ** (tone - 1.0), 0.0)
-        X = X * f[..., None]
+    if flatten is None:
+        X = compress_luminance(X, tone)
     if flatten is not None:
         Xc = binned_xyz(flatten, edges)
         ratio = X[..., 1] / np.where(Xc[..., 1] > 0, Xc[..., 1], 1.0)
@@ -144,4 +154,5 @@ def spectrum_colors(spectra: Spectrum, **kwargs) -> np.ndarray:
     return color(spectra, **kwargs)
 
 
-__all__ = ["bin_edges", "binned_xyz", "spectral_colors", "spectrum_colors", "strip_colors"]
+__all__ = ["bin_edges", "binned_xyz", "compress_luminance", "spectral_colors", "spectrum_colors",
+           "strip_colors"]

@@ -41,16 +41,17 @@ def fig_hero():
 
 @figure("spectrum_rendering", "dark", "How spectral colours are brought into the display gamut")
 def fig_spectrum_rendering():
-    from . import CIE1931_2, SRGB, plot
+    from . import CIE1931_2, plot
+    from .colorspaces import get_colorspace
     from .render import spectral_colors
 
     plt = _plt()
     wl = np.linspace(380, 750, 1500)
     X = CIE1931_2.at(wl)
     rows = [
-        ("clip each channel", SRGB.to_display(X, brightness="max", gamut="clip")),
-        ("add white (desaturate)", SRGB.to_display(X, brightness="max", gamut="desaturate")),
-        ("OKLCh chroma reduction", SRGB.to_display(X, brightness="max", gamut="oklch")),
+        ("clip each channel", get_colorspace(None).to_display(X, brightness="max", gamut="clip")),
+        ("add white (desaturate)", get_colorspace(None).to_display(X, brightness="max", gamut="desaturate")),
+        ("OKLCh chroma reduction", get_colorspace(None).to_display(X, brightness="max", gamut="oklch")),
         ("OKLCh + 8 nm blur  (default)", spectral_colors(wl)),
         ("true relative luminance", spectral_colors(wl, "luminance")),
     ]
@@ -223,8 +224,9 @@ def fig_thin_films():
 
 @figure("iridescence", "dark", "Soap-film colour vs thickness and viewing angle")
 def fig_iridescence():
-    from . import SRGB, plot
+    from . import plot
     from . import thinfilm as tf
+    from .colorspaces import get_colorspace
 
     plt = _plt()
     fig, ax = plt.subplots(figsize=(8.4, 4.0))
@@ -232,7 +234,7 @@ def fig_iridescence():
     a = np.linspace(0, 85, 170)
     wl = np.arange(380.0, 781.0, 5.0)  # 5 nm is plenty: the fringes are >= 90 nm apart up to 1.2 µm
     X = tf.Stack([(tf.WATER, 0)], tf.AIR, tf.AIR).xyz_map(0, d, a, wavelengths=wl)
-    plot.color_map(d, a, SRGB.to_display(X, brightness="global"), ax=ax, xlabel="Film thickness (nm)",
+    plot.color_map(d, a, get_colorspace(None).to_display(X, brightness="global"), ax=ax, xlabel="Film thickness (nm)",
                    ylabel="Angle of incidence (°)")
     ax.set_title("Iridescence of a soap film: colour vs thickness and viewing angle (unpolarised D65)")
     return fig
@@ -294,8 +296,9 @@ def fig_sky():
 
 @figure("rainbow", "dark", "A rainbow computed from water dispersion (Descartes' theory)")
 def fig_rainbow():
-    from . import SRGB, xyz
     from . import atmosphere as atm
+    from . import xyz
+    from .colorspaces import get_colorspace
     from .optics import rainbow_spectra
 
     plt = _plt()
@@ -312,7 +315,7 @@ def fig_rainbow():
     theta = np.hypot(gx, gy + sun_elev)  # angle from the antisolar point (below the horizon)
     Xr = np.stack([np.interp(theta, th, X[:, k]) for k in range(3)], axis=-1)
     grad = (0.55 + 0.45 * np.clip(gy / 52.0, 0, 1))[..., None]  # sky darker towards the zenith
-    img = SRGB.to_display(0.2 * sky * grad + 0.62 * Xr, highlights="whiten")
+    img = get_colorspace(None).to_display(0.2 * sky * grad + 0.62 * Xr, highlights="whiten")
     ground = gy < 0
     img[ground] = np.array([0.07, 0.09, 0.08]) + 0.04 * np.random.default_rng(0).random((ground.sum(), 1))
     fig, ax = plt.subplots(figsize=(8.4, 3.9))
@@ -323,10 +326,123 @@ def fig_rainbow():
     return fig
 
 
-def render(names=None, out="gallery", fmt: str = "png", dpi: float = 150, verbose: bool = True):
-    """Render gallery figures to ``out``; returns the list of written paths."""
+@figure("prism", "dark", "White light dispersed by a dense-flint prism (exact ray trace)")
+def fig_prism():
+    from matplotlib.patches import Polygon
+
+    from . import CIE1931_2, illuminant
+    from .colorspaces import get_colorspace
+    from .optics import SF11, prism_rays
+    from .render import compress_luminance, spectral_colors
+
+    plt = _plt()
+    fig, ax = plt.subplots(figsize=(8.4, 4.4))
+    fan = np.linspace(400, 700, 31)
+    tri, paths = prism_rays(fan, SF11, screen_x=2.3)
+    ax.add_patch(Polygon(tri, closed=True, facecolor="#9fb7d9", alpha=0.13, edgecolor="#cfd8e6", lw=1.0,
+                         zorder=2))
+    ax.plot(paths[0, :2, 0], paths[0, :2, 1], color="#f4f4f4", lw=2.2, solid_capstyle="butt", zorder=3)
+    cols = spectral_colors(fan)
+    ax.plot(paths[0, 1:3, 0], paths[0, 1:3, 1], color="#f4f4f4", lw=1.6, alpha=0.9, zorder=3)  # all colours overlap
+    for p, c in zip(paths, cols):
+        ax.plot(p[2:, 0], p[2:, 1], color=c, lw=1.0, alpha=0.85, zorder=3)
+    # what lands on the screen: dense trace, then power per unit length via the Jacobian
+    dense = np.arange(400.0, 700.5, 0.5)
+    _, dp = prism_rays(dense, SF11, screen_x=2.3)
+    y = dp[:, 3, 1]
+    order = np.argsort(y)
+    ys = np.linspace(y.min(), y.max(), 900)
+    lam = np.interp(ys, y[order], dense[order])
+    dlam_dy = np.abs(np.gradient(lam, ys))
+    X = compress_luminance((illuminant("D65").at(lam) * dlam_dy)[:, None] * CIE1931_2.at(lam), 0.6)
+    rgb = get_colorspace(None).to_display(X, brightness="global", highlights="whiten")
+    ax.imshow(rgb[:, None, :], extent=(2.3, 2.42, ys[0], ys[-1]), origin="lower", aspect="auto",
+              interpolation="bilinear", zorder=4)
+    ax.set_xlim(-1.65, 2.6)
+    ax.set_ylim(min(-0.25, ys.min() - 0.1), max(1.05, ys.max() + 0.1))
+    ax.set_aspect("equal")
+    ax.set_axis_off()
+    ax.set_title("Dispersion by an N-SF11 glass prism (exact Snell's-law ray trace)")
+    return fig
+
+
+@figure("grating", "dark", "Diffraction-grating spectra on a screen: overlapping orders")
+def fig_grating():
+    from . import line_spectrum
+    from .colorspaces import get_colorspace
+    from .optics import grating_screen_xyz
+    from .render import compress_luminance
+
+    plt = _plt()
+    x = np.linspace(-2.6, 2.6, 2600)
+    rows = [("white light, 300 lines/mm", grating_screen_xyz(x, 300.0, orders=range(-6, 7))),
+            ("white light, 600 lines/mm", grating_screen_xyz(x, 600.0)),
+            ("mercury lamp, 600 lines/mm", grating_screen_xyz(x, 600.0, source=line_spectrum("Hg")))]
+    fig, axes = plt.subplots(len(rows), 1, figsize=(8.4, 3.2), sharex=True)
+    for ax, (label, X) in zip(axes, rows):
+        rgb = get_colorspace(None).to_display(compress_luminance(X, 0.6), brightness="global", exposure=1.15,
+                                              highlights="whiten")
+        rgb[np.abs(x) < 0.006] = 1.0  # the undeviated white zeroth order
+        ax.set_facecolor("#000000")
+        ax.imshow(rgb[None], extent=(x[0], x[-1], 0, 1), aspect="auto", interpolation="antialiased")
+        ax.set_yticks([])
+        for side in ("left", "right", "top"):
+            ax.spines[side].set_visible(False)
+        ax.text(0.005, 0.5, label, transform=ax.transAxes, ha="left", va="center", fontsize=8, color="#f0f0f0")
+    for m in (1, 2, 3):  # order labels for the 600 lines/mm rows (centre wavelength 550 nm)
+        s = m * 550.0 / (1e6 / 600.0)
+        if s < 1:
+            axes[1].annotate(f"m = {m}", (s / np.sqrt(1 - s**2), 1.0), xytext=(0, 2), textcoords="offset points",
+                             ha="center", va="bottom", fontsize=7.5, color="#d7dbe4")
+    axes[-1].set_xlabel("Position on a screen 1 m behind the grating (m)")
+    fig.suptitle("Diffraction gratings: each order is a spectrum, and the 2nd and 3rd orders overlap",
+                 x=0.012, ha="left", fontsize=11, fontweight="bold")
+    return fig
+
+
+@figure("stars", "dark", "Colours of stars (blackbody approximation)")
+def fig_stars():
+    from . import blackbody, color, plot
+
+    plt = _plt()
+    stars = [("Spica", "B1", 22400), ("Rigel", "B8", 12100), ("Sirius", "A1", 9940), ("Procyon", "F5", 6530),
+             ("Sun", "G2", 5772), ("Arcturus", "K1.5", 4290), ("Aldebaran", "K5", 3900), ("Betelgeuse", "M1", 3600),
+             ("Proxima Cen", "M5.5", 3040)]
+    T = np.array([t for *_, t in stars], dtype=float)
+    cols = color(blackbody(T))
+    fig = plt.figure(figsize=(8.4, 2.75))
+    gs = fig.add_gridspec(2, 1, height_ratios=[1.75, 0.5], hspace=0.12)
+    ax = fig.add_subplot(gs[0])
+    xs = np.arange(len(stars))
+    for size, alpha in ((4200, 0.04), (2900, 0.08), (1900, 0.15), (1250, 0.32)):  # soft glow
+        ax.scatter(xs, np.zeros_like(xs), s=size, c=cols, alpha=alpha, linewidths=0)
+    ax.scatter(xs, np.zeros_like(xs), s=820, c=cols, linewidths=0)
+    for x0, (name, sptype, t) in zip(xs, stars):
+        ax.text(x0, -0.75, name, ha="center", va="top", fontsize=8.5, color="#eef0f5")
+        ax.text(x0, -1.12, f"{sptype}  ·  {t:,} K", ha="center", va="top", fontsize=7, color="#9aa1b0")
+    ax.set_xlim(-0.6, len(stars) - 0.4)
+    ax.set_ylim(-1.42, 0.72)
+    ax.set_axis_off()
+    ax.set_title("Colours of stars, from their effective temperatures (blackbody approximation)")
+    ax2 = fig.add_subplot(gs[1])
+    lt = np.linspace(np.log10(30000), np.log10(2500), 600)
+    plot.color_strip(lt, color(blackbody(10**lt)), ax=ax2)
+    ticks = [30000, 20000, 10000, 6000, 4000, 3000]
+    ax2.set_xticks(np.log10(ticks), [f"{t:,}" for t in ticks])
+    ax2.set_xlim(lt[0], lt[-1])
+    ax2.set_xlabel("Effective temperature (K)")
+    return fig
+
+
+def render(names=None, out="gallery", fmt: str = "png", dpi: float = 150, verbose: bool = True,
+           space: str = "srgb"):
+    """Render gallery figures to ``out``; returns the list of written paths.
+
+    ``space="p3"`` renders all colours in Display P3 and embeds the ICC profile (PNG/JPEG/TIFF).
+    """
     matplotlib.use("Agg")
     from . import style
+    from .colorspaces import output_space
 
     plt = _plt()
     out = pathlib.Path(out)
@@ -335,7 +451,7 @@ def render(names=None, out="gallery", fmt: str = "png", dpi: float = 150, verbos
     for name in names or list(FIGURES):
         func, theme, _ = FIGURES[name]
         t0 = time.perf_counter()
-        with style.context(theme):
+        with style.context(theme), output_space(space):
             fig = func()
             path = style.save(fig, out / f"{name}.{fmt}", dpi=dpi)
         plt.close(fig)
@@ -351,6 +467,7 @@ def main(argv=None) -> None:
     ap.add_argument("--format", default="png", help="png, svg, pdf, ...")
     ap.add_argument("--dpi", type=float, default=150)
     ap.add_argument("--only", default=None, help="comma-separated figure names")
+    ap.add_argument("--space", default="srgb", help="output colour space: srgb (default), p3, rec2020, adobe")
     ap.add_argument("--list", action="store_true", help="list the figures and exit")
     args = ap.parse_args(argv)
     if args.list:
@@ -361,7 +478,7 @@ def main(argv=None) -> None:
     unknown = [n for n in names or [] if n not in FIGURES]
     if unknown:
         ap.error(f"unknown figure(s): {', '.join(unknown)}; see --list")
-    render(names, args.out, args.format, args.dpi)
+    render(names, args.out, args.format, args.dpi, space=args.space)
 
 
 if __name__ == "__main__":

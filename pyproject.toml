@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "spectrapy"
-version = "0.1.0"
+version = "0.2.0"
 description = "Physically based spectral colour calculations and beautiful spectral plots with NumPy and matplotlib."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -36,7 +36,8 @@ Repository = "https://github.com/fdragowski480677/spectrapy"
 packages = ["src/spectrapy"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/spectrapy", "tests", "tools", "README.md", "COPYING", "COPYING.LESSER", "pyproject.toml"]
+include = ["src/spectrapy", "tests", "tools", "docs/API.md", "README.md", "CHANGELOG.md", "COPYING", "COPYING.LESSER",
+           "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

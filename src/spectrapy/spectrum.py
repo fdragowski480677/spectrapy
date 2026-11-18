@@ -199,13 +199,13 @@ class Spectrum:
 
         return xyz(self, observer=observer, illuminant=illuminant, k=k)
 
-    def color(self, space="srgb", **kwargs) -> np.ndarray:
+    def color(self, space=None, **kwargs) -> np.ndarray:
         """Displayable, encoded RGB in [0, 1]; see :func:`spectrapy.color`."""
         from .colorimetry import color
 
         return color(self, space=space, **kwargs)
 
-    def hex(self, space="srgb", **kwargs):
+    def hex(self, space=None, **kwargs):
         from .colorimetry import hex_color
 
         return hex_color(self, space=space, **kwargs)
@@ -286,7 +286,7 @@ class LineSpectrum:
 
         return xyz(self, observer=observer, k=k)
 
-    def color(self, space="srgb", **kwargs) -> np.ndarray:
+    def color(self, space=None, **kwargs) -> np.ndarray:
         from .colorimetry import color
 
         return color(self, space=space, **kwargs)

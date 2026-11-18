@@ -6,7 +6,7 @@ from matplotlib.path import Path
 
 from ..colorimetry import uv1976_to_xy, xy_to_uv1976, xy_to_xyz, xyz_to_xy
 from ..colorimetry import xyz as _xyz
-from ..colorspaces import SRGB, get_colorspace, map_gamut
+from ..colorspaces import get_colorspace, map_gamut
 from ..illuminants import WHITE_POINTS
 from ..observers import get_observer
 from ..render import _gaussian_blur
@@ -34,13 +34,14 @@ def _fill_image(kind, resolution, observer, poly, blur: float):
     pts = np.stack([gx, gy], axis=-1)
     with np.errstate(divide="ignore", invalid="ignore"):
         X = np.nan_to_num(xy_to_xyz(_from(pts, kind)), nan=0.0, posinf=0.0, neginf=0.0)
-    rgb = map_gamut(SRGB.from_xyz(X), SRGB.luminance_weights, "desaturate")
+    cs = get_colorspace(None)
+    rgb = map_gamut(cs.from_xyz(X), cs.luminance_weights, "desaturate")
     if blur > 0:  # soften the creases of the gamut mapping (same idea as for spectrum strips)
         rgb = _gaussian_blur(_gaussian_blur(rgb, blur, axis=0), blur, axis=1)
     m = rgb.max(-1, keepdims=True)
     with np.errstate(divide="ignore", invalid="ignore"):
         rgb = np.where(m > 0, rgb / m, 0.0)
-    rgb = np.clip(SRGB.encode(np.clip(rgb, 0, 1)), 0, 1)
+    rgb = np.clip(cs.encode(np.clip(rgb, 0, 1)), 0, 1)
     inside = Path(poly).contains_points(pts.reshape(-1, 2)).reshape(gx.shape)
     return np.concatenate([rgb, inside[..., None].astype(float)], axis=-1), (x0, x1, y0, y1)
 

@@ -23,6 +23,8 @@ colours are brought into gamut matters for how plots look, so the pipeline is ex
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 import numpy as np
 
 from ._util import as_float_array, lower_envelope_smooth
@@ -205,7 +207,7 @@ def map_highlights(rgb, weights, method: str = "scale") -> np.ndarray:
         return np.where(m > 1.0, rgb / np.where(m > 0, m, 1.0), rgb)
     if method == "whiten":
         Y = (rgb @ weights)[..., None]
-        with np.errstate(divide="ignore", invalid="ignore"):
+        with np.errstate(all="ignore"):  # m ~ Y (near-neutral colours): any t gives the same result
             t = np.where(m > 1.0, np.clip((1.0 - Y) / (m - Y), 0.0, 1.0), 1.0)
         return np.minimum(Y + np.nan_to_num(t) * (rgb - Y), 1.0)
     raise ValueError(f"unknown highlight handling {method!r}")
@@ -236,8 +238,39 @@ ADOBE_RGB = RGBColorSpace("Adobe RGB (1998)", [[0.64, 0.33], [0.21, 0.71], [0.15
 COLORSPACES = {cs.name: cs for cs in (SRGB, LINEAR_SRGB, DISPLAY_P3, REC2020, ADOBE_RGB)}
 
 
-def get_colorspace(space="srgb") -> RGBColorSpace:
-    """Look up a colour space by name or alias (``"srgb"``, ``"p3"``, ``"rec2020"``, ``"adobe"``...)."""
+_OUTPUT = [SRGB]  # stack: the active output colour space is the last element
+
+
+def get_output_space() -> RGBColorSpace:
+    """The colour space that displayable colours are produced in (default sRGB)."""
+    return _OUTPUT[-1]
+
+
+def set_output_space(space) -> RGBColorSpace:
+    """Set the default output colour space globally; returns the previous one."""
+    prev = _OUTPUT[0]
+    _OUTPUT[0] = get_colorspace(space)
+    return prev
+
+
+@contextmanager
+def output_space(space):
+    """Produce colours in another space temporarily, e.g. ``with output_space("p3"): ...``.
+
+    Pair it with :func:`spectrapy.style.save`, which then embeds the matching ICC profile so that
+    colour-managed viewers show the wider gamut."""
+    _OUTPUT.append(get_colorspace(space))
+    try:
+        yield _OUTPUT[-1]
+    finally:
+        _OUTPUT.pop()
+
+
+def get_colorspace(space=None) -> RGBColorSpace:
+    """Look up a colour space by name or alias (``"srgb"``, ``"p3"``, ``"rec2020"``, ``"adobe"``...);
+    ``None`` means the current output space (see :func:`output_space`)."""
+    if space is None:
+        return get_output_space()
     if isinstance(space, RGBColorSpace):
         return space
     key = str(space).strip().lower()

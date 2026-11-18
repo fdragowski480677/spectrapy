@@ -76,3 +76,14 @@ def test_gallery_subset(tmp_path):
     paths = gallery.render(["spectrum_rendering", "light_sources", "sky"], out=tmp_path, dpi=50, verbose=False)
     assert all(p.exists() for p in paths)
     assert set(gallery.FIGURES) >= {"hero", "chromaticity", "thin_films", "rainbow"}
+
+
+def test_interactive_explorers():
+    ex = sp.interactive.blackbody_explorer(T=6000)
+    before = ex.fig.axes[1].get_facecolor()
+    ex.set(T=2000)
+    assert ex.sliders["T"].val == pytest.approx(2000)
+    assert ex.fig.axes[1].get_facecolor() != before  # the swatch follows the slider
+    tf = sp.interactive.thinfilm_explorer(thickness=300)
+    tf.set(thickness=500, angle=30, n=1.5)
+    assert tf.sliders["thickness"].val == 500

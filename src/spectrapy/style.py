@@ -6,11 +6,14 @@ themes apply to everything inside ``with sp.style.context("dark"):`` or after ``
 from __future__ import annotations
 
 import pathlib
+import warnings
 from contextlib import contextmanager
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from cycler import cycler
+
+from .colorspaces import get_colorspace, get_output_space, output_space, set_output_space  # noqa: F401
 
 _COMMON = {
     "font.family": "sans-serif",
@@ -115,10 +118,31 @@ def is_dark() -> bool:
     return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.4
 
 
-def save(fig, path, dpi: float | None = None, **kwargs) -> pathlib.Path:
-    """Save a figure, creating parent folders; the format follows the file extension."""
+_RASTER = {"png", "jpg", "jpeg", "tif", "tiff", "webp"}
+
+
+def save(fig, path, dpi: float | None = None, colorspace=None, **kwargs) -> pathlib.Path:
+    """Save a figure, creating parent folders; the format follows the file extension.
+
+    If the colours were produced in a wide-gamut space (``colorspace``, default: the active
+    :func:`output_space`, e.g. ``"p3"``), raster formats get the matching ICC profile embedded so
+    colour-managed viewers show the full gamut. Vector formats cannot carry the profile; a warning
+    is issued because viewers will then interpret the colours as sRGB.
+    """
     p = pathlib.Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
+    cs = get_colorspace(colorspace)
+    fmt = str(kwargs.get("format") or p.suffix.lstrip(".") or mpl.rcParams["savefig.format"]).lower()
+    if cs.name != "sRGB":
+        if fmt in _RASTER:
+            from .icc import icc_profile
+
+            pil = dict(kwargs.pop("pil_kwargs", None) or {})
+            pil.setdefault("icc_profile", icc_profile(cs))
+            kwargs["pil_kwargs"] = pil
+        else:
+            warnings.warn(f"{fmt.upper()} files cannot carry an ICC profile; the {cs.name} colours will be "
+                          "shown as if they were sRGB", stacklevel=2)
     fig.savefig(p, dpi=dpi or mpl.rcParams["savefig.dpi"], **kwargs)
     return p
 
