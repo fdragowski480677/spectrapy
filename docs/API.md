@@ -11,6 +11,7 @@ its module; the most used names are also available directly as `spectrapy.<name>
 - [`spectrapy.colorimetry`](#spectrapycolorimetry)
 - [`spectrapy.colorspaces`](#spectrapycolorspaces)
 - [`spectrapy.uniform`](#spectrapyuniform)
+- [`spectrapy.appearance`](#spectrapyappearance)
 - [`spectrapy.adaptation`](#spectrapyadaptation)
 - [`spectrapy.temperature`](#spectrapytemperature)
 - [`spectrapy.quality`](#spectrapyquality)
@@ -533,6 +534,88 @@ function delta_e_2000(lab1, lab2, kL: "float" = 1.0, kC: "float" = 1.0, kH: "flo
 
 CIEDE2000 colour difference (Sharma, Wu & Dalal 2005), vectorized.
 
+## `spectrapy.appearance`
+
+Colour appearance models CIECAM02 (CIE 159:2004) and CAM16 (Li et al. 2017), with their
+uniform colour spaces CAM02-UCS and CAM16-UCS (Luo, Cui & Li 2006).
+
+All functions are vectorized over any batch shape `(..., 3)`. XYZ values are relative to the
+adopted white `xyz_w` (any common scale - they are rescaled internally so that `Y_w = 100`,
+as the models expect). Viewing conditions: adapting luminance `L_A` [cd/m²], relative
+background luminance `Y_b` (in % of the white), and the surround (`"average"`, `"dim"` or
+`"dark"`).
+
+### `appearance.CAMSpecification`
+
+```python
+class CAMSpecification(J: "np.ndarray", C: "np.ndarray", h: "np.ndarray", M: "np.ndarray", s: "np.ndarray", Q: "np.ndarray") -> None
+```
+
+Appearance correlates: lightness `J`, chroma `C`, hue angle `h` (degrees), colourfulness
+`M`, saturation `s`, brightness `Q`. Each is an array of the input batch shape.
+
+- **`JCh`** (property)
+- **`JMh`** (property)
+
+### `appearance.cam16_to_xyz`
+
+```python
+function cam16_to_xyz(J, M, h, xyz_w, L_A: "float" = 4.074366543152521, Y_b: "float" = 20.0, surround="average", discount_illuminant: "bool" = False) -> "np.ndarray"
+```
+
+Inverse CAM16: lightness `J`, colourfulness `M` and hue `h` (degrees) -> XYZ, on the scale
+of `xyz_w`. Useful e.g. to construct colours of given appearance or to gamut-map in CAM16-UCS.
+
+### `appearance.jmh_to_ucs`
+
+```python
+function jmh_to_ucs(JMh, c1: "float" = 0.007, c2: "float" = 0.0228, K_L: "float" = 1.0) -> "np.ndarray"
+```
+
+`(J, M, h)` -> uniform colour space `(J', a', b')` (CAM02-UCS / CAM16-UCS coefficients).
+
+### `appearance.ucs_to_jmh`
+
+```python
+function ucs_to_jmh(Jab, c1: "float" = 0.007, c2: "float" = 0.0228, K_L: "float" = 1.0) -> "np.ndarray"
+```
+
+Inverse of `jmh_to_ucs`.
+
+### `appearance.xyz_to_cam02ucs`
+
+```python
+function xyz_to_cam02ucs(xyz, xyz_w, **conditions) -> "np.ndarray"
+```
+
+XYZ -> CAM02-UCS `(J', a', b')`.
+
+### `appearance.xyz_to_cam16`
+
+```python
+function xyz_to_cam16(xyz, xyz_w, L_A: "float" = 4.074366543152521, Y_b: "float" = 20.0, surround="average", discount_illuminant: "bool" = False) -> "CAMSpecification"
+```
+
+CAM16 appearance correlates (the CIECAM02 successor with a single, better-behaved matrix).
+
+### `appearance.xyz_to_cam16ucs`
+
+```python
+function xyz_to_cam16ucs(xyz, xyz_w, **conditions) -> "np.ndarray"
+```
+
+XYZ -> CAM16-UCS `(J', a', b')`.
+
+### `appearance.xyz_to_ciecam02`
+
+```python
+function xyz_to_ciecam02(xyz, xyz_w, L_A: "float" = 4.074366543152521, Y_b: "float" = 20.0, surround="average", discount_illuminant: "bool" = False) -> "CAMSpecification"
+```
+
+CIECAM02 appearance correlates of `xyz` viewed under white `xyz_w`.
+
+The default `L_A` corresponds to a 64 lux environment (L_A = E / (5 π)).
+
 ## `spectrapy.adaptation`
 
 Chromatic adaptation transforms (von Kries type), vectorized over any batch shape.
@@ -648,7 +731,8 @@ McCamy's (1992) cubic approximation of CCT from xy (quick, ~±2 K near the locus
 
 ## `spectrapy.quality`
 
-Colour rendering of light sources: CIE 13.3-1995 colour rendering index (CRI).
+Colour rendering of light sources: the CIE 13.3-1995 colour rendering index (CRI) and the
+ANSI/IES TM-30 method (fidelity Rf - identical to CIE 224:2017 - gamut Rg and hue-bin metrics).
 
 ### `quality.tcs_spectra`
 
@@ -675,6 +759,45 @@ function cri(source: "Spectrum") -> "CRIResult"
 ```
 
 CIE 13.3-1995 colour rendering index of an emission spectrum (CIE 1931 2° observer).
+
+### `quality.ces_spectra`
+
+```python
+function ces_spectra() -> "Spectrum"
+```
+
+The 99 colour evaluation samples of CIE 224:2017 / ANSI/IES TM-30 (reflectance, 1 nm, 380-780 nm).
+
+### `quality.TM30Result`
+
+```python
+class TM30Result(Rf: "float", Rg: "float", cct: "float", duv: "float", Rf_hues: "np.ndarray", Rcs: "np.ndarray", Rhs: "np.ndarray", Rf_samples: "np.ndarray", reference: "Spectrum", jab_test: "np.ndarray", jab_ref: "np.ndarray", bins: "np.ndarray", bin_ab_test: "np.ndarray", bin_ab_ref: "np.ndarray") -> None
+```
+
+Outcome of `tm30`.
+
+
+### `quality.cie224_reference`
+
+```python
+function cie224_reference(T: "float", wavelengths) -> "np.ndarray"
+```
+
+CIE 224:2017 reference illuminant at CCT `T` on `wavelengths`: Planckian below 4000 K,
+CIE daylight above 5000 K and a luminance-normalised linear blend in between.
+
+### `quality.tm30`
+
+```python
+function tm30(source: "Spectrum") -> "TM30Result"
+```
+
+ANSI/IES TM-30 colour rendition of an emission spectrum.
+
+Follows CIE 224:2017 for the fidelity index Rf (99 samples, CIE 1964 10° observer, CIECAM02 with
+complete adaptation, L_A = 100 cd/m², Y_b = 20, CAM02-UCS colour differences) and TM-30 for the
+gamut index Rg and the 16 hue-bin metrics. Spectra sampled at 5 nm are evaluated at 5 nm,
+anything else at 1 nm over 380-780 nm (missing values are zero, as the standard specifies).
 
 ## `spectrapy.lines`
 
@@ -1281,6 +1404,36 @@ A grid of rounded colour patches with labels.
 
 `colors`: encoded RGB in [0, 1] (shape `(n, 3)`) or hex strings - e.g. `sp.color(spectra)`.
 `sublabels`: `"hex"` (default), a list of strings, or `None`.
+
+### `plot.tm30_bars`
+
+```python
+function tm30_bars(result, metric: "str" = "Rcs", ax=None)
+```
+
+Hue-bin bar chart of `metric`: `"Rcs"` (local chroma shift, %), `"Rhs"` (local hue shift,
+rad) or `"Rf"` (local fidelity), each bar in its bin's colour.
+
+### `plot.tm30_cvg`
+
+```python
+function tm30_cvg(result, ax=None, background: "bool" = True, arrows: "bool" = True, annotate="corners", labels: "bool" = True, name: "str | None" = None)
+```
+
+TM-30 colour vector graphic: the reference (circle) and the test source's average hue-bin
+chromaticities (polygon), normalised so that each reference bin lies on the unit circle.
+Points outside the circle mean increased saturation, inside decreased.
+
+`annotate`: `"corners"` (Rf, Rg, CCT, Duv in the corners), `"title"` (one title line,
+better for side-by-side panels; `name` is prepended) or `False`.
+
+### `plot.tm30_report`
+
+```python
+function tm30_report(result, title: "str | None" = None, fig=None)
+```
+
+One-page TM-30 summary: colour vector graphic plus the three hue-bin charts. Returns the Figure.
 
 ### `plot.visible_band`
 

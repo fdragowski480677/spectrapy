@@ -16,9 +16,11 @@ from .spectra import (
     visible_spectrum,
     wavelength_bar,
 )
+from .tm30 import tm30_bars, tm30_cvg, tm30_report
 
 __all__ = [
     "absorption_spectrum", "chromaticity_diagram", "chromaticity_points", "cmf", "color_map", "color_strip",
     "cri_bars", "emission_atlas", "emission_spectrum", "fill_colors", "spectrum", "swatches",
-    "visible_band", "visible_spectrum", "wavelength_bar",
+    "tm30_bars", "tm30_cvg", "tm30_report", "visible_band", "visible_spectrum",
+    "wavelength_bar",
 ]

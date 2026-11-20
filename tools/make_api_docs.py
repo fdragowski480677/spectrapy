@@ -12,7 +12,8 @@ matplotlib.use("Agg")
 
 MODULES = [
     "spectrapy.spectrum", "spectrapy.observers", "spectrapy.illuminants", "spectrapy.colorimetry",
-    "spectrapy.colorspaces", "spectrapy.uniform", "spectrapy.adaptation", "spectrapy.temperature",
+    "spectrapy.colorspaces", "spectrapy.uniform", "spectrapy.appearance", "spectrapy.adaptation",
+    "spectrapy.temperature",
     "spectrapy.quality", "spectrapy.lines", "spectrapy.thinfilm", "spectrapy.atmosphere", "spectrapy.optics",
     "spectrapy.render", "spectrapy.io", "spectrapy.icc", "spectrapy.plot", "spectrapy.style", "spectrapy.cmap",
     "spectrapy.interactive",

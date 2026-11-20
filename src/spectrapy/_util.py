@@ -106,7 +106,13 @@ def lower_envelope_smooth(a, radius: int, axis: int = -1):
 @cache
 def load_table(name: str):
     """Load a bundled CSV table. Returns ``(wavelengths, {column: values})`` as read-only arrays."""
-    text = resources.files("spectrapy").joinpath("data", name).read_text(encoding="utf-8")
+    res = resources.files("spectrapy").joinpath("data", name)
+    if name.endswith(".gz"):
+        import gzip
+
+        text = gzip.decompress(res.read_bytes()).decode("utf-8")
+    else:
+        text = res.read_text(encoding="utf-8")
     rows = [ln for ln in text.splitlines() if ln.strip() and not ln.lstrip().startswith("#")]
     header = [h.strip() for h in rows[0].split(",")]
     arr = np.array([[float(v) for v in ln.split(",")] for ln in rows[1:]])

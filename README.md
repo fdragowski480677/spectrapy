@@ -18,10 +18,10 @@ of the sky, rainbows. It is a from-scratch, fully vectorized successor to the id
   illuminants A, D50/55/65/75, any D-series CCT, E, FL1–FL12, the CIE LED series; Planck radiators.
 - **Colour spaces.** sRGB, Display P3, Rec. 2020, Adobe RGB, with an explicit display pipeline:
   exposure, gamut mapping (OKLCh, desaturate, clip, …) and highlight handling.
-- **Perceptual spaces.** CIELAB, CIELUV, OKLab, ΔE2000; chromatic adaptation (Bradford, CAT02,
-  CAT16, von Kries).
-- **Light sources.** CCT and Duv for any observer, Planckian and daylight loci, CIE 13.3 colour
-  rendering index (Ra, R1–R14).
+- **Perceptual spaces.** CIELAB, CIELUV, OKLab, ΔE2000; the CIECAM02 and CAM16 colour appearance
+  models with their uniform spaces; chromatic adaptation (Bradford, CAT02, CAT16, von Kries).
+- **Light sources.** CCT and Duv for any observer, Planckian and daylight loci, the CIE 13.3 colour
+  rendering index (Ra, R1–R14), and ANSI/IES TM-30 (Rf, Rg, hue-bin metrics, colour vector graphic).
 - **Physics.** Multilayer thin films by the transfer-matrix method (oblique incidence, s/p,
   dispersive and absorbing materials), Rayleigh sky and sunset (with ozone), rainbows, prisms
   (exact ray tracing) and diffraction gratings, emission and Fraunhofer lines, reading measured
@@ -33,7 +33,7 @@ of the sky, rainbows. It is a from-scratch, fully vectorized successor to the id
   embedded ICC profile, so spectral colours show their full saturation on modern screens.
 - **Interactive.** Slider-driven explorers for blackbodies and thin films, built on matplotlib
   widgets.
-- **Validated.** 116 tests, cross-checked against [colour-science](https://www.colour-science.org),
+- **Validated.** 133 tests, cross-checked against [colour-science](https://www.colour-science.org),
   LittleCMS and physical laws. The full API is in [`docs/API.md`](docs/API.md).
 
 ## Install
@@ -68,6 +68,7 @@ stars = sp.blackbody(np.linspace(2000, 20000, 300))   # a batch of 300 spectra
 rgb = sp.color(stars)                     # (300, 3) displayable sRGB in one call
 
 sp.cri(sp.illuminant("LED-B3"))           # CRIResult(Ra=84.9, R9=23.9, CCT=4102 K, Duv=-0.0006)
+sp.tm30(sp.illuminant("LED-B3"))          # TM30Result(Rf=85.3, Rg=97.9, CCT=4103 K, Duv=-0.0007)
 
 soap = sp.thinfilm.film(sp.thinfilm.WATER, 450)        # a 450 nm soap film in air
 sp.hex_color(soap.reflectance(), brightness="max")      # '#00e2ff'
@@ -77,6 +78,9 @@ with sp.style.context("dark"):
     ax.set_title("The Sun as a 5772 K blackbody")
     sp.style.save(ax.figure, "sun.png")
 ```
+
+For a guided tour with outputs, open the
+[getting-started notebook](examples/getting_started.ipynb).
 
 ## Gallery
 
@@ -112,6 +116,14 @@ gamuts, the Planckian locus with isotemperature lines, and a few light sources.
 sample's colour.
 
 ![CRI](docs/images/cri.png)
+
+**ANSI/IES TM-30.** Colour vector graphics: the red polygon shows how the average colour of each
+hue bin shifts relative to the reference illuminant (the circle). FL2 desaturates reds; the RGB
+LED oversaturates them. Below is the one-page report: local chroma shift, hue shift and fidelity
+per hue bin.
+
+![TM-30](docs/images/tm30.png)
+![TM-30 report](docs/images/tm30_report.png)
 
 **Thin-film interference.** Soap film, oil on water, and the classic SiO₂-on-silicon oxide colour
 chart, all from the transfer-matrix method.
@@ -244,7 +256,8 @@ The API reference, generated from the docstrings by `tools/make_api_docs.py`, is
 | `spectrapy.uniform` | CIELAB, CIELUV, OKLab, LCh, ΔE76, ΔE2000 |
 | `spectrapy.adaptation` | chromatic adaptation transforms |
 | `spectrapy.temperature` | CCT, Duv, Planckian and daylight loci, isotherms |
-| `spectrapy.quality` | CIE 13.3 colour rendering index |
+| `spectrapy.quality` | CIE 13.3 colour rendering index, ANSI/IES TM-30 / CIE 224:2017 |
+| `spectrapy.appearance` | CIECAM02, CAM16, CAM02-UCS and CAM16-UCS |
 | `spectrapy.lines` | line profiles, emission line lists, Fraunhofer lines, solar spectrum |
 | `spectrapy.thinfilm` | transfer-matrix method, `Stack`, dispersion models, materials |
 | `spectrapy.atmosphere` | Rayleigh optical depth, air mass, direct sunlight, zenith sky |
@@ -259,7 +272,7 @@ The API reference, generated from the docstrings by `tools/make_api_docs.py`, is
 
 ## Validation
 
-`pytest` runs 116 tests.
+`pytest` runs 133 tests.
 
 Against colour-science:
 - colour-matching tables identical.
@@ -270,6 +283,8 @@ Against colour-science:
 - All chromatic adaptation transforms match.
 - CCT agrees with Ohno (2013) to 1e-4.
 - CRI Ra agrees to within 0.1.
+- CIECAM02 and CAM16 correlates (and the inverse CAM16) agree to 1e-9.
+- TM-30 agrees: Rf and Rg to 0.02, and every hue-bin metric.
 
 Against physics:
 - Stefan–Boltzmann law (1e-4) and Wien's displacement law.
@@ -289,15 +304,16 @@ spectrapy does, to within 8-bit rounding.
 ## Data and credits
 
 - Colour-matching functions and illuminants A and D65: [CVRL](http://www.cvrl.org). Daylight basis
-  functions, FL and LED illuminants and the CRI test colour samples are CIE tables, taken from
-  colour-science (BSD-3-Clause). Sources are listed in
+  functions, FL and LED illuminants, the CRI test colour samples and the 99 TM-30 / CIE 224 colour
+  evaluation samples are CIE tables, taken from colour-science (BSD-3-Clause). Sources are listed in
   [`src/spectrapy/data/README.md`](src/spectrapy/data/README.md), and `tools/build_data.py`
   regenerates the tables.
 - Emission and Fraunhofer line wavelengths follow the NIST Atomic Spectra Database. **Relative
   intensities, Fraunhofer line strengths and the silicon optical constants are approximate**:
   they are meant for illustration.
 - Inspired by [ColorPy](https://github.com/markkness/ColorPy) by Mark Kness (LGPL-3.0).
-- Methods: CIE 015:2018 (colorimetry); CIE 13.3-1995 (CRI); Ohno 2014 (CCT/Duv); Sharma, Wu & Dalal
+- Methods: CIE 015:2018 (colorimetry); CIE 13.3-1995 (CRI); CIE 224:2017 and ANSI/IES TM-30
+  (colour rendition); CIE 159:2004 (CIECAM02); Li et al. 2017 (CAM16); Ohno 2014 (CCT/Duv); Sharma, Wu & Dalal
   2005 (CIEDE2000); Ottosson 2020 (OKLab); Born & Wolf / Macleod (thin films); Bodhaine et al. 1999
   and Kasten & Young 1989 (atmosphere); Hulburt 1953 (ozone and the twilight sky); Malitson 1965
   (fused silica); Green 2008 (silicon).

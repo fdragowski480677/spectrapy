@@ -5,9 +5,9 @@ Sources
 * CIE 1931 2 deg and CIE 1964 10 deg colour-matching functions, CIE illuminants
   A and D65 (1 nm): Colour & Vision Research Laboratory (CVRL), http://www.cvrl.org
 * CIE daylight basis functions S0/S1/S2, fluorescent FL1-FL12, LED illuminants
-  (CIE 015:2018) and the CRI test colour samples TCS01-TCS14 (CIE 13.3-1995):
-  taken from the ``colour-science`` package (BSD-3-Clause), which reproduces the
-  CIE tables.
+  (CIE 015:2018), the CRI test colour samples TCS01-TCS14 (CIE 13.3-1995) and the
+  99 colour evaluation samples of CIE 224:2017 / ANSI/IES TM-30: taken from the
+  ``colour-science`` package (BSD-3-Clause), which reproduces the CIE tables.
 
 Usage::
 
@@ -17,6 +17,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import gzip
 import io
 import pathlib
 import urllib.request
@@ -106,6 +107,19 @@ def main() -> None:
           ["CIE 13.3-1995 test colour samples TCS01-TCS14, spectral reflectance, 5 nm",
            "Source: colour-science (BSD-3-Clause) reproduction of the CIE table"],
           names, t["TCS01"].wavelengths, np.column_stack([t[k].values for k in names]))
+
+    from colour import SpectralShape
+    from colour.quality.cfi2017 import load_TCS_CIE2017
+
+    ces = load_TCS_CIE2017(SpectralShape(380, 780, 1))
+    write("tm30_ces.csv",
+          ["CIE 224:2017 / ANSI/IES TM-30 colour evaluation samples CES01-CES99, spectral reflectance, 1 nm",
+           "Source: colour-science (BSD-3-Clause) reproduction of the CIE 224:2017 data"],
+          [f"CES{i:02d}" for i in range(1, 100)], ces.wavelengths, ces.values, fmt="%.6g")
+    raw = (OUT / "tm30_ces.csv").read_bytes()
+    (OUT / "tm30_ces.csv.gz").write_bytes(gzip.compress(raw, compresslevel=9, mtime=0))
+    (OUT / "tm30_ces.csv").unlink()
+    print("compressed tm30_ces.csv -> tm30_ces.csv.gz")
 
 
 if __name__ == "__main__":

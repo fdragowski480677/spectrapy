@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0
+
+- **ANSI/IES TM-30.** `sp.tm30(spectrum)` computes the fidelity index Rf (identical to CIE 224:2017),
+  the gamut index Rg, and the 16 hue-bin metrics Rf,hj, Rcs,hj and Rhs,hj. It uses the 99 colour
+  evaluation samples and the CIE 224 reference-illuminant blend. Plots: `plot.tm30_cvg` (colour
+  vector graphic), `plot.tm30_bars` and the one-page `plot.tm30_report`. Validated against
+  colour-science.
+- **Colour appearance models.** The new `spectrapy.appearance` module: CIECAM02 and CAM16 (J, C,
+  h, M, s, Q), the CAM02-UCS and CAM16-UCS uniform colour spaces, and the inverse CAM16.
+- **Getting-started notebook.** `examples/getting_started.ipynb`, generated and executed by
+  `tools/build_notebook.py`. CI re-executes it on every push.
+- **New gallery figures:** TM-30 colour vector graphics and a TM-30 report.
+- Bundled data tables may be gzip-compressed; the CES table ships as `tm30_ces.csv.gz`.
+
 ## 0.2.0
 
 - **Wide-gamut output.** `sp.output_space("p3")` (also `"rec2020"`, `"adobe"`) makes plots and colour

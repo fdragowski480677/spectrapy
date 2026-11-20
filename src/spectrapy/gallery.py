@@ -194,6 +194,25 @@ def fig_cri():
     return fig
 
 
+@figure("tm30", "light", "ANSI/IES TM-30 colour vector graphics of three light sources")
+def fig_tm30():
+    from . import illuminant, plot, tm30
+
+    plt = _plt()
+    fig, axes = plt.subplots(1, 3, figsize=(10.4, 4.0))
+    for ax, name in zip(axes, ("FL2", "LED-B3", "LED-RGB1")):
+        plot.tm30_cvg(tm30(illuminant(name)), ax=ax, annotate="title", name=name)
+    return fig
+
+
+@figure("tm30_report", "light", "One-page ANSI/IES TM-30 report for an RGB LED")
+def fig_tm30_report():
+    from . import illuminant, plot, tm30
+
+    return plot.tm30_report(tm30(illuminant("LED-RGB1")),
+                            title="ANSI/IES TM-30 report: CIE LED-RGB1 (red, green and blue LEDs)")
+
+
 @figure("thin_films", "light", "Interference colours of thin films")
 def fig_thin_films():
     from . import color, plot

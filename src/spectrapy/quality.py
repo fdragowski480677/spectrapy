@@ -1,14 +1,17 @@
-"""Colour rendering of light sources: CIE 13.3-1995 colour rendering index (CRI)."""
+"""Colour rendering of light sources: the CIE 13.3-1995 colour rendering index (CRI) and the
+ANSI/IES TM-30 method (fidelity Rf - identical to CIE 224:2017 - gamut Rg and hue-bin metrics)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import numpy as np
 
-from ._util import load_table
+from ._util import load_table, trapezoid_weights
+from .appearance import jmh_to_ucs, xyz_to_ciecam02
 from .colorimetry import xyz, xyz_to_uv1960
 from .constants import C2_CIE
-from .illuminants import blackbody, daylight
+from .illuminants import blackbody, daylight, daylight_from_xy, daylight_xy, planck
+from .observers import CIE1931_2, CIE1964_10
 from .spectrum import Spectrum
 from .temperature import cct as _cct
 
@@ -94,3 +97,110 @@ def cri(source: Spectrum) -> CRIResult:
     dE = np.linalg.norm(uvw_t - uvw_r, axis=-1)
     R = 100.0 - 4.6 * dE
     return CRIResult(Ra=float(R[:8].mean()), R=R, cct=T, duv=duv, reference=ref, delta_e=dE)
+
+
+# ---------------------------------------------------------------------------------------- TM-30
+CES_NAMES = [f"CES{i:02d}" for i in range(1, 100)]
+
+
+def ces_spectra() -> Spectrum:
+    """The 99 colour evaluation samples of CIE 224:2017 / ANSI/IES TM-30 (reflectance, 1 nm, 380-780 nm)."""
+    wl, cols = load_table("tm30_ces.csv.gz")
+    return Spectrum(wl, np.stack([cols[n] for n in CES_NAMES]), "reflectance", name="CIE 224 / TM-30 CES")
+
+
+@dataclass
+class TM30Result:
+    """Outcome of :func:`tm30`."""
+
+    Rf: float                 #: fidelity index (0-100; = CIE 224:2017 Rf)
+    Rg: float                 #: gamut index (100 = same gamut area as the reference)
+    cct: float                #: correlated colour temperature of the test source [K]
+    duv: float                #: distance from the Planckian locus
+    Rf_hues: np.ndarray       #: local fidelity Rf,hj of the 16 hue bins
+    Rcs: np.ndarray           #: local chroma shift Rcs,hj of the 16 hue bins [%]
+    Rhs: np.ndarray           #: local hue shift Rhs,hj of the 16 hue bins [rad]
+    Rf_samples: np.ndarray    #: fidelity of each of the 99 samples
+    reference: Spectrum       #: reference illuminant (CIE 224:2017 blend of Planckian and daylight)
+    jab_test: np.ndarray      #: CAM02-UCS (J', a', b') of the samples under the test source
+    jab_ref: np.ndarray       #: CAM02-UCS (J', a', b') under the reference
+    bins: np.ndarray          #: hue bin (0-15) of each sample, from its hue under the reference
+    bin_ab_test: np.ndarray   #: mean (a', b') per hue bin, test source
+    bin_ab_ref: np.ndarray    #: mean (a', b') per hue bin, reference
+
+    def __repr__(self) -> str:
+        return f"TM30Result(Rf={self.Rf:.1f}, Rg={self.Rg:.1f}, CCT={self.cct:.0f} K, Duv={self.duv:+.4f})"
+
+
+def _rf(delta_e):
+    return 10.0 * np.log1p(np.exp((100.0 - 6.73 * np.asarray(delta_e)) / 10.0))
+
+
+def cie224_reference(T: float, wavelengths) -> np.ndarray:
+    """CIE 224:2017 reference illuminant at CCT ``T`` on ``wavelengths``: Planckian below 4000 K,
+    CIE daylight above 5000 K and a luminance-normalised linear blend in between."""
+    wl = np.asarray(wavelengths, dtype=float)
+    w = trapezoid_weights(wl)
+    ybar = CIE1931_2.at(wl)[:, 1] * w
+    P = planck(wl, T, c2=C2_CIE) if T <= 5000 else None
+    D = daylight_from_xy(daylight_xy(T), wavelengths=wl).values if T >= 4000 else None
+    if T < 4000:
+        return P
+    if T > 5000:
+        return D
+    m = (T - 4000.0) / 1000.0
+    return (1.0 - m) * P / (P @ ybar) + m * D / (D @ ybar)
+
+
+def _polygon_area(p) -> float:
+    x, y = p[:, 0], p[:, 1]
+    return 0.5 * abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))
+
+
+def tm30(source: Spectrum) -> TM30Result:
+    """ANSI/IES TM-30 colour rendition of an emission spectrum.
+
+    Follows CIE 224:2017 for the fidelity index Rf (99 samples, CIE 1964 10° observer, CIECAM02 with
+    complete adaptation, L_A = 100 cd/m², Y_b = 20, CAM02-UCS colour differences) and TM-30 for the
+    gamut index Rg and the 16 hue-bin metrics. Spectra sampled at 5 nm are evaluated at 5 nm,
+    anything else at 1 nm over 380-780 nm (missing values are zero, as the standard specifies).
+    """
+    if source.kind != "emission" or source.shape:
+        raise ValueError("tm30() expects a single emission spectrum")
+    wl_s = source.wavelengths
+    step = 5.0 if wl_s.size > 1 and np.allclose(np.diff(wl_s), 5.0) else 1.0
+    g = np.arange(380.0, 780.0 + step / 2.0, step)
+    S = source.at(g)
+    w = trapezoid_weights(g)
+    T, duv = _cct(S @ (CIE1931_2.at(g) * w[:, None]))
+    T, duv = float(T), float(duv)
+    ref = cie224_reference(T, g)
+    cmf10 = CIE1964_10.at(g) * w[:, None]
+    ces = ces_spectra().resample(g).values  # exact subsample of the 1 nm table on a 5 nm grid
+
+    def colorimetry(spd):
+        white = spd @ cmf10
+        k = 100.0 / white[1]
+        XYZ = (ces * spd) @ cmf10 * k
+        cam = xyz_to_ciecam02(XYZ, white * k, L_A=100.0, Y_b=20.0, surround="average", discount_illuminant=True)
+        return jmh_to_ucs(cam.JMh), cam.h
+
+    jab_t, _ = colorimetry(S)
+    jab_r, h_r = colorimetry(ref)
+    dE = np.linalg.norm(jab_t - jab_r, axis=-1)
+    bins = np.minimum(np.floor(h_r / 22.5).astype(int), 15)
+    onehot = bins[None, :] == np.arange(16)[:, None]  # (16, 99)
+    counts = onehot.sum(axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ab_t = (onehot @ jab_t[:, 1:]) / counts[:, None]
+        ab_r = (onehot @ jab_r[:, 1:]) / counts[:, None]
+        dE_bins = (onehot @ dE) / counts
+    theta = np.radians(22.5 * np.arange(16) + 11.25)
+    d = ab_t - ab_r
+    norm = np.linalg.norm(ab_r, axis=1)
+    Rcs = 100.0 * (d[:, 0] * np.cos(theta) + d[:, 1] * np.sin(theta)) / norm
+    Rhs = (-d[:, 0] * np.sin(theta) + d[:, 1] * np.cos(theta)) / norm
+    return TM30Result(Rf=float(_rf(dE.mean())), Rg=100.0 * _polygon_area(ab_t) / _polygon_area(ab_r), cct=T,
+                      duv=duv, Rf_hues=_rf(dE_bins), Rcs=Rcs, Rhs=Rhs, Rf_samples=_rf(dE),
+                      reference=Spectrum(g, ref, "emission", name=f"CIE 224 reference {T:.0f} K"),
+                      jab_test=jab_t, jab_ref=jab_r, bins=bins, bin_ab_test=ab_t, bin_ab_ref=ab_r)
