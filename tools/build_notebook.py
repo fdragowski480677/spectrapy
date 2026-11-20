@@ -23,7 +23,7 @@ matplotlib. This notebook is a guided tour; every figure function returns an `Ax
 that you can keep editing.
 
 ```bash
-pip install "git+https://github.com/fdragowski480677/spectrapy.git"
+pip install spectrapy-colour      # then: import spectrapy
 ```"""),
     ("code", """import numpy as np
 import matplotlib.pyplot as plt

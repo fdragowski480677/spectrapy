@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+- **Published on PyPI** as `spectrapy-colour` (the name `spectrapy` is taken there):
+  `pip install spectrapy-colour`. The import name is unchanged: `import spectrapy`.
+- Release workflow: publishing a GitHub release builds the sdist and wheel, checks them, smoke-tests
+  the wheel and uploads to PyPI with Trusted Publishing.
+- README images and links are absolute so they render on PyPI; added project URLs and classifiers.
+
 ## 0.3.0
 
 - **ANSI/IES TM-30.** `sp.tm30(spectrum)` computes the fidelity index Rf (identical to CIE 224:2017),

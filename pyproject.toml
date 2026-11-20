@@ -3,8 +3,8 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "spectrapy"
-version = "0.3.0"
+name = "spectrapy-colour"
+version = "0.3.1"
 description = "Physically based spectral colour calculations and beautiful spectral plots with NumPy and matplotlib."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -16,7 +16,14 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Education",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
@@ -25,13 +32,17 @@ dependencies = ["numpy>=1.24", "matplotlib>=3.7"]
 [project.optional-dependencies]
 test = ["pytest>=7", "colour-science>=0.4.4", "scipy"]
 notebook = ["nbformat", "nbclient", "ipykernel"]
-dev = ["spectrapy[test,notebook]", "ruff"]
+dev = ["spectrapy-colour[test,notebook]", "ruff"]
 
 [project.scripts]
 spectrapy-gallery = "spectrapy.gallery:main"
 
 [project.urls]
+Homepage = "https://github.com/fdragowski480677/spectrapy"
+Documentation = "https://github.com/fdragowski480677/spectrapy/blob/main/docs/API.md"
 Repository = "https://github.com/fdragowski480677/spectrapy"
+Changelog = "https://github.com/fdragowski480677/spectrapy/blob/main/CHANGELOG.md"
+Issues = "https://github.com/fdragowski480677/spectrapy/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spectrapy"]

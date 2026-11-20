@@ -1,10 +1,12 @@
 # spectrapy
 
 [![CI](https://github.com/fdragowski480677/spectrapy/actions/workflows/ci.yml/badge.svg)](https://github.com/fdragowski480677/spectrapy/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/spectrapy-colour)](https://pypi.org/project/spectrapy-colour/)
+[![Python](https://img.shields.io/pypi/pyversions/spectrapy-colour)](https://pypi.org/project/spectrapy-colour/)
 
 **Physically based spectral colour calculations and spectral plots — NumPy + matplotlib.**
 
-![Spectroscope atlas: continuous spectrum, the Sun with Fraunhofer lines, and the emission lines of H, He, Ne, Na and Hg](docs/images/hero.png)
+![Spectroscope atlas: continuous spectrum, the Sun with Fraunhofer lines, and the emission lines of H, He, Ne, Na and Hg](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/hero.png)
 
 spectrapy turns physical descriptions of light — spectra of power versus wavelength — into colours,
 and draws the figures that make spectra intuitive: spectra filled with the colours of their
@@ -34,15 +36,28 @@ of the sky, rainbows. It is a from-scratch, fully vectorized successor to the id
 - **Interactive.** Slider-driven explorers for blackbodies and thin films, built on matplotlib
   widgets.
 - **Validated.** 133 tests, cross-checked against [colour-science](https://www.colour-science.org),
-  LittleCMS and physical laws. The full API is in [`docs/API.md`](docs/API.md).
+  LittleCMS and physical laws. The full API is in [`docs/API.md`](https://github.com/fdragowski480677/spectrapy/blob/main/docs/API.md).
 
 ## Install
+
+```bash
+pip install spectrapy-colour
+```
+
+The PyPI name is `spectrapy-colour` because `spectrapy` was already taken there. The package you
+import is still `spectrapy`:
+
+```python
+import spectrapy as sp
+```
+
+The latest development version installs straight from GitHub:
 
 ```bash
 pip install "git+https://github.com/fdragowski480677/spectrapy.git"
 ```
 
-or, for development:
+For development:
 
 ```bash
 git clone https://github.com/fdragowski480677/spectrapy.git
@@ -80,96 +95,96 @@ with sp.style.context("dark"):
 ```
 
 For a guided tour with outputs, open the
-[getting-started notebook](examples/getting_started.ipynb).
+[getting-started notebook](https://github.com/fdragowski480677/spectrapy/blob/main/examples/getting_started.ipynb).
 
 ## Gallery
 
 The figures below are rendered by `python -m spectrapy.gallery --out gallery`. Use `--list` to
 list them and `--only a,b` to render a subset. Every figure is a short function in
-[`src/spectrapy/gallery.py`](src/spectrapy/gallery.py), so read them as recipes.
+[`src/spectrapy/gallery.py`](https://github.com/fdragowski480677/spectrapy/blob/main/src/spectrapy/gallery.py), so read them as recipes.
 
 **Blackbody radiation.** Planck spectra, the Wien peaks, the visible band, and the colour of a
 blackbody versus temperature.
 
-![Blackbody](docs/images/blackbody.png)
+![Blackbody](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/blackbody.png)
 
 **The Sun.** A 5772 K photosphere with the classic Fraunhofer lines. The lines in the blue lower
 the correlated colour temperature to about 5700 K.
 
-![Sun](docs/images/sun.png)
+![Sun](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/sun.png)
 
 **Chromaticity diagrams.** CIE 1931 xy and CIE 1976 u′v′, with the sRGB, Display P3 and Rec. 2020
 gamuts, the Planckian locus with isotemperature lines, and a few light sources.
 
-![Chromaticity](docs/images/chromaticity.png)
+![Chromaticity](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/chromaticity.png)
 
 **Colour-matching functions.** The 2° (1931) and 10° (1964) standard observers.
 
-![CMF](docs/images/cmf.png)
+![CMF](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/cmf.png)
 
 **Light sources.** Their colours, and the spectra of four CIE illuminants with their CRI.
 
-![Light sources](docs/images/light_sources.png)
-![Illuminants](docs/images/illuminants.png)
+![Light sources](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/light_sources.png)
+![Illuminants](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/illuminants.png)
 
 **Colour rendering.** The special indices R1–R14 of the CIE test samples, each bar drawn in its
 sample's colour.
 
-![CRI](docs/images/cri.png)
+![CRI](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/cri.png)
 
 **ANSI/IES TM-30.** Colour vector graphics: the red polygon shows how the average colour of each
 hue bin shifts relative to the reference illuminant (the circle). FL2 desaturates reds; the RGB
 LED oversaturates them. Below is the one-page report: local chroma shift, hue shift and fidelity
 per hue bin.
 
-![TM-30](docs/images/tm30.png)
-![TM-30 report](docs/images/tm30_report.png)
+![TM-30](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/tm30.png)
+![TM-30 report](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/tm30_report.png)
 
 **Thin-film interference.** Soap film, oil on water, and the classic SiO₂-on-silicon oxide colour
 chart, all from the transfer-matrix method.
 
-![Thin films](docs/images/thin_films.png)
+![Thin films](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/thin_films.png)
 
 **Iridescence.** Soap-film colour versus thickness and viewing angle (unpolarised light).
 
-![Iridescence](docs/images/iridescence.png)
+![Iridescence](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/iridescence.png)
 
 **Anti-reflection coatings.** Residual reflection on BK7 glass, and the tint it gives the coating.
 
-![AR coatings](docs/images/ar_coating.png)
+![AR coatings](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/ar_coating.png)
 
 **Sky and sunset.** Rayleigh scattering reddens the setting sun; ozone absorption keeps the
 twilight sky blue.
 
-![Sky](docs/images/sky.png)
+![Sky](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/sky.png)
 
 **Rainbow.** Computed from the dispersion of water (Descartes' minimum deviation) and the size of
 the solar disk, with the primary and secondary bows and Alexander's dark band between them.
 
-![Rainbow](docs/images/rainbow.png)
+![Rainbow](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/rainbow.png)
 
 **Prism.** White light dispersed by a dense-flint (N-SF11) prism, traced exactly with Snell's law.
 The screen shows the true distribution: violet is stretched out, red is compressed.
 
-![Prism](docs/images/prism.png)
+![Prism](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/prism.png)
 
 **Diffraction gratings.** The spectrum on a screen behind 300 and 600 lines/mm gratings, where the
 2nd and 3rd orders overlap, and a mercury lamp repeating its lines in every order. Power per unit
 screen length uses the exact Jacobian, so energy is conserved.
 
-![Grating](docs/images/grating.png)
+![Grating](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/grating.png)
 
 **Stars.** Colours of well-known stars from their effective temperatures, in the blackbody
 approximation.
 
-![Stars](docs/images/stars.png)
+![Stars](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/stars.png)
 
 **Rendering spectral colours.** Monochromatic light lies outside every display gamut. spectrapy
 reduces chroma at constant perceptual hue (OKLCh), then applies an 8 nm "spectroscope resolution"
 blur. This removes the bright and dark bands that per-colour gamut mapping produces at the display
 primaries.
 
-![Spectrum rendering](docs/images/spectrum_rendering.png)
+![Spectrum rendering](https://raw.githubusercontent.com/fdragowski480677/spectrapy/main/docs/images/spectrum_rendering.png)
 
 ## Wide-gamut figures
 
@@ -242,7 +257,7 @@ in memory. Measured on the development machine:
 | 10 000 CCT + Duv | 0.27 s |
 
 The API reference, generated from the docstrings by `tools/make_api_docs.py`, is in
-[`docs/API.md`](docs/API.md).
+[`docs/API.md`](https://github.com/fdragowski480677/spectrapy/blob/main/docs/API.md).
 
 ## Modules
 
@@ -306,7 +321,7 @@ spectrapy does, to within 8-bit rounding.
 - Colour-matching functions and illuminants A and D65: [CVRL](http://www.cvrl.org). Daylight basis
   functions, FL and LED illuminants, the CRI test colour samples and the 99 TM-30 / CIE 224 colour
   evaluation samples are CIE tables, taken from colour-science (BSD-3-Clause). Sources are listed in
-  [`src/spectrapy/data/README.md`](src/spectrapy/data/README.md), and `tools/build_data.py`
+  [`src/spectrapy/data/README.md`](https://github.com/fdragowski480677/spectrapy/blob/main/src/spectrapy/data/README.md), and `tools/build_data.py`
   regenerates the tables.
 - Emission and Fraunhofer line wavelengths follow the NIST Atomic Spectra Database. **Relative
   intensities, Fraunhofer line strengths and the silicon optical constants are approximate**:
@@ -321,5 +336,5 @@ spectrapy does, to within 8-bit rounding.
 ## License
 
 spectrapy is free software under the **GNU Lesser General Public License v3.0 or later**: see
-[`COPYING.LESSER`](COPYING.LESSER) and [`COPYING`](COPYING). You can use it from any program,
+[`COPYING.LESSER`](https://github.com/fdragowski480677/spectrapy/blob/main/COPYING.LESSER) and [`COPYING`](https://github.com/fdragowski480677/spectrapy/blob/main/COPYING). You can use it from any program,
 including closed-source ones. Changes to spectrapy itself must be shared under the same licence.

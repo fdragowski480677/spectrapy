@@ -78,7 +78,7 @@ from .spectrum import LineSpectrum, Spectrum, wavelengths
 from .temperature import cct, planckian_xy, xy_from_cct
 from .thinfilm import Stack
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 
 _LAZY = {"plot", "style", "cmap", "gallery", "interactive"}
 
